@@ -15,9 +15,11 @@ public class Fisher: MonoBehaviour
     [SerializeField] private float caughtAlarmDistance;
     [SerializeField] private FisherUi fisherUi;
     #endregion
+
     [Space]
 
     #region Animation
+
     [SerializeField] private Transform boat;
     [SerializeField] private Transform boatStdPosition;
     [SerializeField] private Transform boatDownPosition;
@@ -30,15 +32,16 @@ public class Fisher: MonoBehaviour
     private FishMovement _currentFish;
     private float _fishingTarget;
 
-    private CompositeDisposable _fishDashSubscription;
+    private readonly CompositeDisposable _fishDashSubscription = new();
     
     private void Awake()
     {
         hook.Fish.Subscribe(fish =>
         {
             _currentFish = fish;
+            fisherUi.Active.Value = true;
             _currentFish.Dashed.Subscribe(Respawn).AddTo(_fishDashSubscription);
-            Destroy(hook.gameObject);
+            hook.gameObject.SetActive(false);
         }).AddTo(hook);
     }
 
@@ -80,13 +83,17 @@ public class Fisher: MonoBehaviour
     private async void Respawn(Vector2 dashDirection)
     {
         if(Vector2.Angle(dashDirection, Vector2.down) > 5f || Mathf.Abs(_fishingTarget - 1) > .1f) return;
-        
+        fisherUi.Active.Value = false;
+        _fishingTarget = 0f;
+        _currentFish.AdditionalSpeed = Vector2.zero;
+        _currentFish = null;
+        _fishDashSubscription.Clear();
         var progress = 0f;
         while (progress <= 1f)
         {
             progress += Time.deltaTime / boatDownTime;
             boat.position = Vector3.Lerp(boatStdPosition.position, boatDownPosition.position, progress);
-            boat.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, 90, progress / boatRotatePart));
+            boat.rotation = Quaternion.Euler(0, 0, Mathf.Lerp(0, -90, progress / boatRotatePart));
             await UniTask.Yield(PlayerLoopTiming.Update);
         }
 
@@ -95,8 +102,10 @@ public class Fisher: MonoBehaviour
         progress = 0f;
         while (progress <= 1f)
         {
-            progress += Time.deltaTime / boatDownTime;
-            boat.position = Vector3.Lerp(boatLeftPosition.position, boatStdPosition.position, progress);
+            progress += Time.deltaTime / boatLeftTime;
+            boat.position = Vector3.Lerp(boatLeftPosition.position, boatStdPosition.position, Mathf.Sqrt(progress));
+            await UniTask.Yield(PlayerLoopTiming.Update);
         }
+        hook.gameObject.SetActive(true);
     }
 }

@@ -18,11 +18,14 @@ public class FishMovement : MonoBehaviour
     [SerializeField] private Transform sprite;
     [Space] 
     [SerializeField] private float waterLevel;
+    [Space] 
+    [SerializeField] private MainUI mainUI;
     #endregion
     private readonly Subject<Vector2> _dashed = new Subject<Vector2>();
     private Camera _mainCamera;
     private Vector2 _currentVelocity;
     private float _displayAngle;
+    private bool _gameStarted;
 
     public Vector2 AdditionalSpeed { get; set; }
     public IObservable<Vector2> Dashed => _dashed;
@@ -30,10 +33,12 @@ public class FishMovement : MonoBehaviour
     private void Awake()
     {
         _mainCamera = Camera.main;
+        mainUI.GameStarted.Subscribe(_ => _gameStarted = true).AddTo(this);
     }
 
     private void Update()
     {
+        if(!_gameStarted) return;
         var inputDirection = (_mainCamera.ScreenToWorldPoint(Input.mousePosition) - transform.position).normalized;
         ProcessAngle(inputDirection);
         ProcessVelocity(inputDirection);

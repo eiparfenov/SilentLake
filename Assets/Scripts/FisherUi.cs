@@ -15,6 +15,7 @@ public class FisherUi: MonoBehaviour
     public ReactiveProperty<float> CurrentFishingTargetTop { get; } = new ReactiveProperty<float>();
     public ReactiveProperty<float> CurrentFishingTargetBottom { get; } = new ReactiveProperty<float>();
     public ReactiveProperty<float> Alarm { get; } = new ReactiveProperty<float>();
+    public ReactiveProperty<bool> Active { get; } = new ReactiveProperty<bool>();
 
 
     public void Awake()
@@ -25,5 +26,12 @@ public class FisherUi: MonoBehaviour
         CurrentFishingTargetBottom.Subscribe(rotation =>
             bottomLineImage.transform.rotation = Quaternion.Euler(0, 0, -90 * Mathf.Clamp01(rotation))).AddTo(this);
         Alarm.Subscribe(alarm => fishProcessImage.color = alarmGradient.Evaluate(alarm)).AddTo(this);
+
+        Active.Subscribe(active =>
+        {
+            fishProcessImage.enabled = active;
+            topLineImage.enabled = active;
+            bottomLineImage.enabled = active;
+        }).AddTo(this);
     }
 }
